@@ -7,23 +7,33 @@
         body {
             font-family: Arial, sans-serif;
             margin: 24px;
+            color: #222;
         }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
         table {
             border-collapse: collapse;
             width: 100%;
         }
+
         th, td {
             border: 1px solid #ddd;
             padding: 8px 10px;
             text-align: left;
         }
+
         th a {
             text-decoration: none;
             color: inherit;
         }
+
         th {
             background: #f5f5f5;
         }
+
         .toolbar {
             margin-bottom: 16px;
             display: flex;
@@ -31,23 +41,110 @@
             align-items: center;
             flex-wrap: wrap;
         }
+
         .sync-info {
             margin-bottom: 16px;
-            padding: 12px;
+            padding: 14px;
             background: #f7f7f7;
             border: 1px solid #ddd;
+            border-radius: 6px;
         }
+
+        .sync-main-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .sync-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .sync-status-box {
+            margin-top: 12px;
+            padding: 12px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .sync-status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(220px, 1fr));
+            gap: 8px 16px;
+            margin-top: 10px;
+        }
+
         .pagination {
             margin-top: 16px;
             display: flex;
             gap: 8px;
             align-items: center;
         }
+
         form.inline {
             display: inline;
         }
+
         button {
             cursor: pointer;
+            padding: 8px 12px;
+        }
+
+        .muted {
+            color: #666;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            background: #e9ecef;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-running {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .loader {
+            display: none;
+            font-weight: 600;
+            color: #92400e;
+        }
+
+        .loader.visible {
+            display: inline-block;
+        }
+
+        .error-box {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            border-radius: 6px;
+        }
+
+        .small {
+            font-size: 13px;
         }
     </style>
 </head>
@@ -55,25 +152,56 @@
     <h1>Stany magazynowe</h1>
 
     <div class="sync-info">
-        <div>
-            <strong>Data ostatniego pobrania danych:</strong>
-            {% if last_data_fetch_at %}
-                {{ last_data_fetch_at }}
-            {% else %}
-                brak danych
-            {% endif %}
+        <div class="sync-main-row">
+            <div>
+                <strong>Data ostatniego pobrania danych:</strong>
+                {% if last_data_fetch_at %}
+                    {{ last_data_fetch_at }}
+                {% else %}
+                    brak danych
+                {% endif %}
+            </div>
+
+            <div>
+                <strong>Status ostatniej synchronizacji:</strong>
+                {% if last_run %}
+                    <span
+                        id="last-sync-status-badge"
+                        class="status-badge {% if last_run.status == 'success' %}status-success{% elif last_run.status == 'running' %}status-running{% elif last_run.status == 'failed' %}status-failed{% endif %}"
+                    >
+                        {{ last_run.status }}
+                    </span>
+                {% else %}
+                    <span id="last-sync-status-badge" class="status-badge">brak danych</span>
+                {% endif %}
+            </div>
         </div>
 
-        {% if last_run %}
-        <div style="margin-top: 6px;">
-            <strong>Status ostatniej synchronizacji:</strong> {{ last_run.status }}
-        </div>
-        {% endif %}
-
-        <div style="margin-top: 10px;">
-            <form method="post" action="/admin/sync?token={{ request.query_params.get('token', '') }}" class="inline">
-                <button type="submit">Pobierz ponownie dane przez API</button>
+        <div class="sync-actions">
+            <form method="post" action="/admin/sync?token={{ request.query_params.get('token', '') }}" class="inline" id="sync-form">
+                <button type="submit" id="sync-button">Pobierz ponownie dane przez API</button>
             </form>
+
+            <span id="sync-loader" class="loader">Trwa synchronizacja danych…</span>
+        </div>
+
+        <div id="sync-status-box" class="sync-status-box">
+            <div><strong>Bieżący status synchronizacji</strong></div>
+
+            <div class="sync-status-grid small">
+                <div><strong>Status:</strong> <span id="sync-status-text">sprawdzanie...</span></div>
+                <div><strong>Start:</strong> <span id="sync-started-at">-</span></div>
+                <div><strong>Koniec:</strong> <span id="sync-finished-at">-</span></div>
+                <div><strong>Produkty:</strong> <span id="sync-products-found">0</span></div>
+                <div><strong>Batchy:</strong> <span id="sync-batches-processed">0</span></div>
+                <div><strong>Rekordy current:</strong> <span id="sync-rows-current">0</span></div>
+                <div><strong>Rekordy history:</strong> <span id="sync-rows-history">0</span></div>
+            </div>
+
+            <div id="sync-error-row" class="error-box" style="display:none;">
+                <strong>Błąd synchronizacji:</strong>
+                <span id="sync-error-message"></span>
+            </div>
         </div>
     </div>
 
@@ -124,5 +252,81 @@
             <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page + 1 }}">Następna →</a>
         {% endif %}
     </div>
+
+    <script>
+        function setBadgeClass(status) {
+            const badge = document.getElementById('last-sync-status-badge');
+            if (!badge) return;
+
+            badge.className = 'status-badge';
+
+            if (status === 'success') {
+                badge.classList.add('status-success');
+            } else if (status === 'running') {
+                badge.classList.add('status-running');
+            } else if (status === 'failed') {
+                badge.classList.add('status-failed');
+            }
+        }
+
+        async function refreshSyncStatus() {
+            try {
+                const response = await fetch('/admin/sync-status', {
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const data = await response.json();
+
+                document.getElementById('sync-status-text').textContent = data.status || '-';
+                document.getElementById('sync-started-at').textContent = data.started_at || '-';
+                document.getElementById('sync-finished-at').textContent = data.finished_at || '-';
+                document.getElementById('sync-products-found').textContent = data.products_found ?? 0;
+                document.getElementById('sync-batches-processed').textContent = data.batches_processed ?? 0;
+                document.getElementById('sync-rows-current').textContent = data.rows_written_current ?? 0;
+                document.getElementById('sync-rows-history').textContent = data.rows_written_history ?? 0;
+
+                const errorRow = document.getElementById('sync-error-row');
+                const errorMessage = document.getElementById('sync-error-message');
+                const loader = document.getElementById('sync-loader');
+                const button = document.getElementById('sync-button');
+                const badge = document.getElementById('last-sync-status-badge');
+
+                if (badge) {
+                    badge.textContent = data.status || 'brak danych';
+                    setBadgeClass(data.status);
+                }
+
+                if (data.status === 'running') {
+                    loader.classList.add('visible');
+                    button.disabled = true;
+                } else {
+                    loader.classList.remove('visible');
+                    button.disabled = false;
+                }
+
+                if (data.error_message) {
+                    errorRow.style.display = 'block';
+                    errorMessage.textContent = data.error_message;
+                } else {
+                    errorRow.style.display = 'none';
+                    errorMessage.textContent = '';
+                }
+            } catch (error) {
+                console.error('Błąd odczytu statusu synchronizacji:', error);
+            }
+        }
+
+        document.getElementById('sync-form').addEventListener('submit', function () {
+            document.getElementById('sync-loader').classList.add('visible');
+            document.getElementById('sync-button').disabled = true;
+        });
+
+        refreshSyncStatus();
+        setInterval(refreshSyncStatus, 3000);
+    </script>
 </body>
 </html>
