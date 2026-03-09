@@ -101,3 +101,39 @@ def get_table_rows(db, q: str = "", sort: str = "id_asc", page: int = 1, per_pag
     """
 
     return db.execute(text(sql), params).mappings().all()
+
+
+def get_last_sync_info(db):
+    row = db.execute(
+        text(
+            """
+            SELECT
+                MAX(fetched_at) AS last_data_fetch_at
+            FROM product_stock_current
+            """
+        )
+    ).mappings().first()
+
+    sync_row = db.execute(
+        text(
+            """
+            SELECT
+                started_at,
+                finished_at,
+                status,
+                products_found,
+                batches_processed,
+                rows_written_current,
+                rows_written_history,
+                error_message
+            FROM sync_runs
+            ORDER BY id DESC
+            LIMIT 1
+            """
+        )
+    ).mappings().first()
+
+    return {
+        "last_data_fetch_at": row["last_data_fetch_at"] if row else None,
+        "last_run": sync_row,
+    }
