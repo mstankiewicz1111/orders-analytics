@@ -31,25 +31,60 @@
             align-items: center;
             flex-wrap: wrap;
         }
+        .sync-info {
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #f7f7f7;
+            border: 1px solid #ddd;
+        }
         .pagination {
             margin-top: 16px;
             display: flex;
             gap: 8px;
             align-items: center;
         }
+        form.inline {
+            display: inline;
+        }
+        button {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <h1>Stany magazynowe</h1>
 
-    <form method="get" action="/admin" class="toolbar">
-    <input type="text" name="q" value="{{ q or '' }}" placeholder="Szukaj po ID lub symbol-kolor">
-    <input type="hidden" name="sort" value="{{ sort or 'id_asc' }}">
-    <button type="submit">Szukaj</button>
+    <div class="sync-info">
+        <div>
+            <strong>Data ostatniego pobrania danych:</strong>
+            {% if last_data_fetch_at %}
+                {{ last_data_fetch_at }}
+            {% else %}
+                brak danych
+            {% endif %}
+        </div>
 
-    <a href="/admin/export-csv?q={{ q or '' }}&sort={{ sort or 'id_asc' }}">Eksport CSV</a>
-    <a href="/admin/export-xlsx?q={{ q or '' }}&sort={{ sort or 'id_asc' }}">Eksport XLSX</a>
-</form>
+        {% if last_run %}
+        <div style="margin-top: 6px;">
+            <strong>Status ostatniej synchronizacji:</strong> {{ last_run.status }}
+        </div>
+        {% endif %}
+
+        <div style="margin-top: 10px;">
+            <form method="post" action="/admin/sync?token={{ request.query_params.get('token', '') }}" class="inline">
+                <button type="submit">Pobierz ponownie dane przez API</button>
+            </form>
+        </div>
+    </div>
+
+    <form method="get" action="/admin" class="toolbar">
+        <input type="text" name="q" value="{{ q or '' }}" placeholder="Szukaj po ID lub symbol-kolor">
+        <input type="hidden" name="sort" value="{{ sort or 'id_asc' }}">
+        <button type="submit">Szukaj</button>
+
+        <a href="/admin/export-csv?q={{ q or '' }}&sort={{ sort or 'id_asc' }}">Eksport CSV</a>
+        <a href="/admin/export-xlsx?q={{ q or '' }}&sort={{ sort or 'id_asc' }}">Eksport XLSX</a>
+    </form>
 
     <table>
         <thead>
