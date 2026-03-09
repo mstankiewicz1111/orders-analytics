@@ -1,9 +1,11 @@
-from __future__ import annotations
+import os
+import sys
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)
 
 from app.db import SessionLocal
 from app.sync_service import refresh_products_cache
-
-
 
 def main() -> None:
     db = SessionLocal()
