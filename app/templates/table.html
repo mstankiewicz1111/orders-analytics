@@ -14,6 +14,11 @@
             margin-bottom: 20px;
         }
 
+        h2 {
+            margin-top: 32px;
+            margin-bottom: 16px;
+        }
+
         table {
             border-collapse: collapse;
             width: 100%;
@@ -82,6 +87,7 @@
 
         .pagination {
             margin-top: 16px;
+            margin-bottom: 12px;
             display: flex;
             gap: 8px;
             align-items: center;
@@ -145,6 +151,12 @@
 
         .small {
             font-size: 13px;
+        }
+
+        .section-separator {
+            margin: 32px 0;
+            border: 0;
+            border-top: 1px solid #ddd;
         }
     </style>
 </head>
@@ -217,11 +229,11 @@
     <table>
         <thead>
             <tr>
-                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'id_asc' %}id_desc{% else %}id_asc{% endif %}">ID</a></th>
-                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'symbol_asc' %}symbol_desc{% else %}symbol_asc{% endif %}">symbol-kolor</a></th>
-                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'm1_asc' %}m1_desc{% else %}m1_asc{% endif %}">stan dyspozycyjny (M1)</a></th>
-                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'rez_asc' %}rez_desc{% else %}rez_asc{% endif %}">rezerwacje</a></th>
-                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'sold_asc' %}sold_desc{% else %}sold_asc{% endif %}">Całkowita liczba sprzedanych</a></th>
+                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'id_asc' %}id_desc{% else %}id_asc{% endif %}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}">ID</a></th>
+                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'symbol_asc' %}symbol_desc{% else %}symbol_asc{% endif %}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}">symbol-kolor</a></th>
+                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'm1_asc' %}m1_desc{% else %}m1_asc{% endif %}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}">stan dyspozycyjny (M1)</a></th>
+                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'rez_asc' %}rez_desc{% else %}rez_asc{% endif %}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}">rezerwacje</a></th>
+                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'sold_asc' %}sold_desc{% else %}sold_asc{% endif %}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}">Całkowita liczba sprzedanych</a></th>
             </tr>
         </thead>
         <tbody>
@@ -243,13 +255,79 @@
 
     <div class="pagination">
         {% if page and page > 1 %}
-            <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page - 1 }}">← Poprzednia</a>
+            <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page - 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}">← Poprzednia</a>
         {% endif %}
 
         <span>Strona {{ page }} z {{ total_pages }}</span>
 
         {% if page and total_pages and page < total_pages %}
-            <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page + 1 }}">Następna →</a>
+            <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page + 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}">Następna →</a>
+        {% endif %}
+    </div>
+
+    <hr class="section-separator">
+
+    <h2>Zagregowane po symbol-kolor</h2>
+
+    <form method="get" action="/admin" class="toolbar">
+        <input type="hidden" name="q" value="{{ q or '' }}">
+        <input type="hidden" name="sort" value="{{ sort or 'id_asc' }}">
+        <input type="hidden" name="page" value="{{ page or 1 }}">
+
+        <input type="text" name="grouped_q" value="{{ grouped_q or '' }}" placeholder="Szukaj po symbol-kolor">
+        <input type="hidden" name="grouped_sort" value="{{ grouped_sort or 'symbol_asc' }}">
+        <button type="submit">Szukaj</button>
+
+        <a href="/admin/export-grouped-csv?grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}">
+            Eksport CSV
+        </a>
+        <a href="/admin/export-grouped-xlsx?grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}">
+            Eksport XLSX
+        </a>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>
+                    <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={% if grouped_sort == 'symbol_asc' %}symbol_desc{% else %}symbol_asc{% endif %}&grouped_page={{ grouped_page or 1 }}">
+                        symbol-kolor
+                    </a>
+                </th>
+                <th>
+                    <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={% if grouped_sort == 'sold_sum_asc' %}sold_sum_desc{% else %}sold_sum_asc{% endif %}&grouped_page={{ grouped_page or 1 }}">
+                        Łączna liczba sprzedanych
+                    </a>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in grouped_rows %}
+            <tr>
+                <td>{{ row.symbol_kolor }}</td>
+                <td>{{ row.laczna_liczba_sprzedanych }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="2">Brak danych</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        {% if grouped_page and grouped_page > 1 %}
+            <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page - 1 }}">
+                ← Poprzednia
+            </a>
+        {% endif %}
+
+        <span>Strona {{ grouped_page }} z {{ grouped_total_pages }}</span>
+
+        {% if grouped_page and grouped_total_pages and grouped_page < grouped_total_pages %}
+            <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page + 1 }}">
+                Następna →
+            </a>
         {% endif %}
     </div>
 
