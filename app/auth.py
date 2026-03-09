@@ -27,8 +27,18 @@ def require_api_auth(
     request: Request,
     x_admin_token: str | None = Header(default=None),
 ) -> None:
+
+    # 1️⃣ zalogowany użytkownik panelu
     if is_session_authenticated(request):
         return
+
+    # 2️⃣ token w nagłówku
     if settings.admin_token and x_admin_token == settings.admin_token:
         return
-    raise HTTPException(status_code=401, detail='Unauthorized')
+
+    # 3️⃣ token w query param (?token=...)
+    query_token = request.query_params.get("token")
+    if settings.admin_token and query_token == settings.admin_token:
+        return
+
+    raise HTTPException(status_code=401, detail="Unauthorized")
