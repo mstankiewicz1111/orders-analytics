@@ -57,5 +57,4 @@ services:
         sync: false
 
 databases:
-  - name: wassyl-stock-db
-    plan: starter
+  - name: stockdb
