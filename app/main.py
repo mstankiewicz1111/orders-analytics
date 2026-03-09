@@ -1,17 +1,14 @@
 import csv
 import io
 from math import ceil
-
-from fastapi.responses import JSONResponse
-from .repositories import count_table_rows, get_last_sync_info, get_latest_sync_run, get_table_rows
+from zoneinfo import ZoneInfo
 
 from fastapi import Depends, FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
-from starlette.middleware.sessions import SessionMiddleware
-from sqlalchemy.orm import Session
 from openpyxl import Workbook
-from zoneinfo import ZoneInfo
+from sqlalchemy.orm import Session
+from starlette.middleware.sessions import SessionMiddleware
 
 from .auth import (
     is_session_authenticated,
@@ -21,16 +18,24 @@ from .auth import (
     verify_credentials,
 )
 from .db import get_db
-from .repositories import count_table_rows, get_last_sync_info, get_table_rows
+from .repositories import (
+    count_table_rows,
+    get_last_sync_info,
+    get_latest_sync_run,
+    get_table_rows,
+)
 from .settings import settings
 from .sync_service import sync_all
 
+
 WARSAW_TZ = ZoneInfo("Europe/Warsaw")
+
 
 def format_dt_pl(dt):
     if not dt:
         return None
     return dt.astimezone(WARSAW_TZ).strftime("%Y-%m-%d %H:%M:%S")
+
 
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
@@ -93,26 +98,35 @@ def admin_panel(
 
     rows = get_table_rows(db, q=q, sort=sort, page=page, per_page=per_page)
     sync_info = get_last_sync_info(db)
+
     formatted_last_data_fetch_at = format_dt_pl(sync_info["last_data_fetch_at"])
-    formatted_last_run_started_at = format_dt_pl(sync_info["last_run"]["started_at"]) if sync_info["last_run"] else None
-    formatted_last_run_finished_at = format_dt_pl(sync_info["last_run"]["finished_at"]) if sync_info["last_run"] and sync_info["last_run"]["finished_at"] else None
+    formatted_last_run_started_at = (
+        format_dt_pl(sync_info["last_run"]["started_at"])
+        if sync_info["last_run"]
+        else None
+    )
+    formatted_last_run_finished_at = (
+        format_dt_pl(sync_info["last_run"]["finished_at"])
+        if sync_info["last_run"] and sync_info["last_run"]["finished_at"]
+        else None
+    )
 
     return templates.TemplateResponse(
-    "table.html",
-    {
-        "request": request,
-        "rows": rows,
-        "q": q,
-        "sort": sort,
-        "page": page,
-        "total_pages": total_pages,
-        "total": total,
-        "last_data_fetch_at": formatted_last_data_fetch_at = format_dt_pl(sync_info["last_data_fetch_at"]),
-        "last_run": sync_info["last_run"],
-        "last_run_started_at": formatted_last_run_started_at,
-        "last_run_finished_at": formatted_last_run_finished_at,
-    },
-)
+        "table.html",
+        {
+            "request": request,
+            "rows": rows,
+            "q": q,
+            "sort": sort,
+            "page": page,
+            "total_pages": total_pages,
+            "total": total,
+            "last_data_fetch_at": formatted_last_data_fetch_at,
+            "last_run": sync_info["last_run"],
+            "last_run_started_at": formatted_last_run_started_at,
+            "last_run_finished_at": formatted_last_run_finished_at,
+        },
+    )
 
 
 @app.post("/admin/sync")
@@ -138,7 +152,7 @@ def export_csv(
 
     rows = get_table_rows(db, q=q, sort=sort, page=1, per_page=100000)
     sync_info = get_last_sync_info(db)
-    last_data_fetch_at = sync_info["last_data_fetch_at"]
+    formatted_last_data_fetch_at = format_dt_pl(sync_info["last_data_fetch_at"])
 
     output = io.StringIO()
     writer = csv.writer(output, delimiter=";")
@@ -187,7 +201,7 @@ def export_xlsx(
 
     rows = get_table_rows(db, q=q, sort=sort, page=1, per_page=100000)
     sync_info = get_last_sync_info(db)
-    last_data_fetch_at = sync_info["last_data_fetch_at"]
+    formatted_last_data_fetch_at = format_dt_pl(sync_info["last_data_fetch_at"])
 
     wb = Workbook()
     ws = wb.active
@@ -195,7 +209,7 @@ def export_xlsx(
 
     ws["A1"] = "Data ostatniego pobrania danych"
     ws["B1"] = formatted_last_data_fetch_at or "brak danych"
-    
+
     headers = [
         "ID",
         "symbol-kolor",
@@ -236,6 +250,7 @@ def export_xlsx(
             "Content-Disposition": 'attachment; filename="stany_magazynowe.xlsx"'
         },
     )
+
 
 @app.get("/admin/sync-status")
 def admin_sync_status(
