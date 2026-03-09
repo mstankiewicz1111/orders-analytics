@@ -2,32 +2,345 @@
 <html lang="pl">
 <head>
     <meta charset="utf-8">
-    <title>Panel stanów</title>
+    <title>WASSYL.pl - Panel stanów magazynowych</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <style>
+        :root {
+            --bg: #f4f6fb;
+            --surface: #ffffff;
+            --surface-soft: #f8fafc;
+            --border: #dbe3ef;
+            --border-strong: #c9d5e6;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --primary: #0f766e;
+            --primary-dark: #115e59;
+            --primary-soft: #e6fffb;
+            --accent: #0ea5e9;
+            --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+            --radius: 18px;
+            --radius-sm: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
+            margin: 0;
+            padding: 24px;
+            background: linear-gradient(180deg, #f8fafc 0%, #f4f6fb 100%);
+            color: var(--text);
             font-family: Arial, sans-serif;
-            margin: 24px;
-            color: #222;
         }
 
-        h1 {
-            margin-bottom: 20px;
+        .page-shell {
+            max-width: 1440px;
+            margin: 0 auto;
         }
 
-        h2 {
-            margin-top: 32px;
+        .hero {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fbff 100%);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            margin-bottom: 22px;
+        }
+
+        .hero-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            min-width: 0;
+        }
+
+        .brand-logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 170px;
+            max-width: 100%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+        }
+
+        .brand-logo img {
+            display: block;
+            max-width: 100%;
+            max-height: 56px;
+            height: auto;
+        }
+
+        .brand-copy h1 {
+            margin: 0 0 6px;
+            font-size: 32px;
+            line-height: 1.1;
+        }
+
+        .brand-copy p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .quick-nav {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .nav-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            padding: 11px 16px;
+            border-radius: 999px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-weight: 600;
+            transition: 0.2s ease;
+        }
+
+        .nav-pill:hover {
+            border-color: var(--primary);
+            color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .nav-pill.primary {
+            background: var(--primary-soft);
+            border-color: #9ee7dd;
+            color: var(--primary-dark);
+        }
+
+        .panel-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px;
+            box-shadow: var(--shadow);
+            margin-bottom: 22px;
+        }
+
+        .sync-info {
+            padding: 22px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(240px, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .stat-box {
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 14px 16px;
+        }
+
+        .stat-label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .sync-actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .sync-status-box {
+            margin-top: 18px;
+            padding: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #f9fbfd 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        .sync-box-title {
+            margin: 0 0 12px;
+            font-size: 18px;
+        }
+
+        .sync-status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(220px, 1fr));
+            gap: 10px 18px;
+            margin-top: 10px;
+        }
+
+        .small {
+            font-size: 13px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 14px;
             margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .section-title-wrap h2 {
+            margin: 0 0 6px;
+            font-size: 24px;
+        }
+
+        .section-title-wrap p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .section-anchor-link {
+            text-decoration: none;
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 600;
+            padding-top: 4px;
+        }
+
+        .toolbar {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .toolbar input[type="text"] {
+            min-width: 280px;
+            flex: 1 1 320px;
+            padding: 11px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--border-strong);
+            background: #fff;
+            color: var(--text);
+            outline: none;
+        }
+
+        .toolbar input[type="text"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12);
+        }
+
+        form.inline {
+            display: inline;
+        }
+
+        button,
+        .btn-link {
+            cursor: pointer;
+            padding: 11px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-strong);
+            background: #fff;
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: 0.2s ease;
+        }
+
+        button:hover,
+        .btn-link:hover {
+            transform: translateY(-1px);
+            border-color: var(--primary);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            border-color: var(--primary-dark);
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: #fff;
+            color: var(--text);
+        }
+
+        .btn-soft {
+            background: var(--primary-soft);
+            border-color: #9ee7dd;
+            color: var(--primary-dark);
+        }
+
+        .table-shell {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: #fff;
         }
 
         table {
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             width: 100%;
+            min-width: 760px;
         }
 
         th, td {
-            border: 1px solid #ddd;
-            padding: 8px 10px;
+            padding: 13px 14px;
             text-align: left;
+            border-bottom: 1px solid #e8eef7;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #f8fafc;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: #475569;
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
 
         th a {
@@ -35,83 +348,50 @@
             color: inherit;
         }
 
-        th {
-            background: #f5f5f5;
+        tbody tr:nth-child(even) {
+            background: #fcfdff;
         }
 
-        .toolbar {
-            margin-bottom: 16px;
+        tbody tr:hover {
+            background: #f2f8ff;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .pagination {
+            margin-top: 16px;
             display: flex;
-            gap: 8px;
+            gap: 10px;
             align-items: center;
+            justify-content: space-between;
             flex-wrap: wrap;
         }
 
-        .sync-info {
-            margin-bottom: 16px;
-            padding: 14px;
-            background: #f7f7f7;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-        }
-
-        .sync-main-row {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
-
-        .sync-actions {
-            margin-top: 10px;
+        .pagination-controls {
             display: flex;
             gap: 10px;
             align-items: center;
             flex-wrap: wrap;
         }
 
-        .sync-status-box {
-            margin-top: 12px;
-            padding: 12px;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-        }
-
-        .sync-status-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(220px, 1fr));
-            gap: 8px 16px;
-            margin-top: 10px;
-        }
-
-        .pagination {
-            margin-top: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        form.inline {
-            display: inline;
-        }
-
-        button {
-            cursor: pointer;
-            padding: 8px 12px;
+        .pagination-info {
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 600;
         }
 
         .muted {
-            color: #666;
+            color: var(--muted);
         }
 
         .status-badge {
             display: inline-block;
-            padding: 4px 8px;
+            padding: 6px 10px;
             border-radius: 999px;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 700;
             background: #e9ecef;
         }
 
@@ -132,7 +412,7 @@
 
         .loader {
             display: none;
-            font-weight: 600;
+            font-weight: 700;
             color: #92400e;
         }
 
@@ -141,194 +421,310 @@
         }
 
         .error-box {
-            margin-top: 10px;
-            padding: 10px;
+            margin-top: 12px;
+            padding: 12px 14px;
             background: #fee2e2;
             border: 1px solid #fecaca;
             color: #991b1b;
-            border-radius: 6px;
+            border-radius: 12px;
         }
 
-        .small {
-            font-size: 13px;
+        .section-spacer {
+            height: 8px;
         }
 
-        .section-separator {
-            margin: 32px 0;
-            border: 0;
-            border-top: 1px solid #ddd;
+        @media (max-width: 920px) {
+            body {
+                padding: 16px;
+            }
+
+            .hero,
+            .panel-card,
+            .sync-info {
+                padding: 18px;
+            }
+
+            .brand {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .brand-logo {
+                width: 150px;
+            }
+
+            .brand-copy h1 {
+                font-size: 28px;
+            }
+
+            .stats-grid,
+            .sync-status-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .toolbar input[type="text"] {
+                min-width: 100%;
+            }
+
+            .pagination {
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Stany magazynowe</h1>
+    <div class="page-shell">
+        <header class="hero">
+            <div class="hero-top">
+                <div class="brand">
+                    <div class="brand-logo">
+                        <img src="https://wassyl.pl/data/gfx/mask/pol/logo_1_big.svg" alt="Wassyl">
+                    </div>
 
-    <div class="sync-info">
-        <div class="sync-main-row">
-            <div>
-                <strong>Data ostatniego pobrania danych:</strong>
-                {% if last_data_fetch_at %}
-                    {{ last_data_fetch_at }}
-                {% else %}
-                    brak danych
-                {% endif %}
+                    <div class="brand-copy">
+                        <h1>Panel stanów magazynowych</h1>
+                        <p>Monitoring produktów w produkcji, stanów M1, rezerwacji i agregacji po modelu.</p>
+                    </div>
+                </div>
+
+                <div class="hero-actions">
+                    <a class="btn-link btn-secondary" href="#products-table-section">Tabela produktów</a>
+                    <a class="btn-link btn-soft" href="#grouped-table-section">Tabela zagregowana</a>
+                </div>
             </div>
 
-            <div>
-                <strong>Status ostatniej synchronizacji:</strong>
-                {% if last_run %}
-                    <span
-                        id="last-sync-status-badge"
-                        class="status-badge {% if last_run.status == 'success' %}status-success{% elif last_run.status == 'running' %}status-running{% elif last_run.status == 'failed' %}status-failed{% endif %}"
-                    >
-                        {{ last_run.status }}
-                    </span>
-                {% else %}
-                    <span id="last-sync-status-badge" class="status-badge">brak danych</span>
-                {% endif %}
+            <div class="quick-nav">
+                <a class="nav-pill primary" href="#products-table-section">Przejdź do tabeli z ID produktów</a>
+                <a class="nav-pill" href="#grouped-table-section">Przejdź do tabeli zagregowanej</a>
+            </div>
+        </header>
+
+        <div class="panel-card sync-info">
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span class="stat-label">Data ostatniego pobrania danych</span>
+                    <div class="stat-value">
+                        {% if last_data_fetch_at %}
+                            {{ last_data_fetch_at }}
+                        {% else %}
+                            brak danych
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="stat-box">
+                    <span class="stat-label">Status ostatniej synchronizacji</span>
+                    <div class="stat-value">
+                        {% if last_run %}
+                            <span
+                                id="last-sync-status-badge"
+                                class="status-badge {% if last_run.status == 'success' %}status-success{% elif last_run.status == 'running' %}status-running{% elif last_run.status == 'failed' %}status-failed{% endif %}"
+                            >
+                                {{ last_run.status }}
+                            </span>
+                        {% else %}
+                            <span id="last-sync-status-badge" class="status-badge">brak danych</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="sync-actions">
+                <form method="post" action="/admin/sync?token={{ request.query_params.get('token', '') }}" class="inline" id="sync-form">
+                    <button type="submit" id="sync-button" class="btn-primary">Pobierz ponownie dane przez API</button>
+                </form>
+
+                <span id="sync-loader" class="loader">Trwa synchronizacja danych…</span>
+            </div>
+
+            <div id="sync-status-box" class="sync-status-box">
+                <h3 class="sync-box-title">Bieżący status synchronizacji</h3>
+
+                <div class="sync-status-grid small">
+                    <div><strong>Status:</strong> <span id="sync-status-text">sprawdzanie...</span></div>
+                    <div><strong>Start:</strong> <span id="sync-started-at">-</span></div>
+                    <div><strong>Koniec:</strong> <span id="sync-finished-at">-</span></div>
+                    <div><strong>Produkty:</strong> <span id="sync-products-found">0</span></div>
+                    <div><strong>Batchy:</strong> <span id="sync-batches-processed">0</span></div>
+                    <div><strong>Rekordy current:</strong> <span id="sync-rows-current">0</span></div>
+                    <div><strong>Rekordy history:</strong> <span id="sync-rows-history">0</span></div>
+                </div>
+
+                <div id="sync-error-row" class="error-box" style="display:none;">
+                    <strong>Błąd synchronizacji:</strong>
+                    <span id="sync-error-message"></span>
+                </div>
             </div>
         </div>
 
-        <div class="sync-actions">
-            <form method="post" action="/admin/sync?token={{ request.query_params.get('token', '') }}" class="inline" id="sync-form">
-                <button type="submit" id="sync-button">Pobierz ponownie dane przez API</button>
+        <section id="products-table-section" class="panel-card">
+            <div class="section-header">
+                <div class="section-title-wrap">
+                    <h2>Tabela produktów</h2>
+                    <p>Widok szczegółowy z identyfikatorami produktów, stanem dyspozycyjnym, rezerwacjami i liczbą sprzedanych.</p>
+                </div>
+
+                <a class="section-anchor-link" href="#grouped-table-section">Przejdź do tabeli zagregowanej ↓</a>
+            </div>
+
+            <form method="get" action="/admin#products-table-section" class="toolbar">
+                <input type="text" name="q" value="{{ q or '' }}" placeholder="Szukaj po ID lub symbol-kolor">
+                <input type="hidden" name="sort" value="{{ sort or 'id_asc' }}">
+                <input type="hidden" name="grouped_q" value="{{ grouped_q or '' }}">
+                <input type="hidden" name="grouped_sort" value="{{ grouped_sort or 'symbol_asc' }}">
+                <input type="hidden" name="grouped_page" value="{{ grouped_page or 1 }}">
+                <button type="submit">Szukaj</button>
+
+                <a class="btn-link" href="/admin/export-csv?q={{ q or '' }}&sort={{ sort or 'id_asc' }}">Eksport CSV</a>
+                <a class="btn-link" href="/admin/export-xlsx?q={{ q or '' }}&sort={{ sort or 'id_asc' }}">Eksport XLSX</a>
             </form>
 
-            <span id="sync-loader" class="loader">Trwa synchronizacja danych…</span>
-        </div>
-
-        <div id="sync-status-box" class="sync-status-box">
-            <div><strong>Bieżący status synchronizacji</strong></div>
-
-            <div class="sync-status-grid small">
-                <div><strong>Status:</strong> <span id="sync-status-text">sprawdzanie...</span></div>
-                <div><strong>Start:</strong> <span id="sync-started-at">-</span></div>
-                <div><strong>Koniec:</strong> <span id="sync-finished-at">-</span></div>
-                <div><strong>Produkty:</strong> <span id="sync-products-found">0</span></div>
-                <div><strong>Batchy:</strong> <span id="sync-batches-processed">0</span></div>
-                <div><strong>Rekordy current:</strong> <span id="sync-rows-current">0</span></div>
-                <div><strong>Rekordy history:</strong> <span id="sync-rows-history">0</span></div>
+            <div class="table-shell">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>
+                                <a href="/admin?q={{ q or '' }}&sort={% if sort == 'id_asc' %}id_desc{% else %}id_asc{% endif %}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}#products-table-section">
+                                    ID
+                                </a>
+                            </th>
+                            <th>
+                                <a href="/admin?q={{ q or '' }}&sort={% if sort == 'symbol_asc' %}symbol_desc{% else %}symbol_asc{% endif %}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}#products-table-section">
+                                    symbol-kolor
+                                </a>
+                            </th>
+                            <th>
+                                <a href="/admin?q={{ q or '' }}&sort={% if sort == 'm1_asc' %}m1_desc{% else %}m1_asc{% endif %}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}#products-table-section">
+                                    stan dyspozycyjny (M1)
+                                </a>
+                            </th>
+                            <th>
+                                <a href="/admin?q={{ q or '' }}&sort={% if sort == 'rez_asc' %}rez_desc{% else %}rez_asc{% endif %}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}#products-table-section">
+                                    rezerwacje
+                                </a>
+                            </th>
+                            <th>
+                                <a href="/admin?q={{ q or '' }}&sort={% if sort == 'sold_asc' %}sold_desc{% else %}sold_asc{% endif %}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}#products-table-section">
+                                    Całkowita liczba sprzedanych
+                                </a>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            <td>{{ row.id }}</td>
+                            <td>{{ row.symbol_kolor }}</td>
+                            <td>{{ row.m1_stan_dyspozycyjny }}</td>
+                            <td>{{ row.rezerwacje }}</td>
+                            <td>{{ row.calkowita_liczba_sprzedanych }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5">Brak danych</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
 
-            <div id="sync-error-row" class="error-box" style="display:none;">
-                <strong>Błąd synchronizacji:</strong>
-                <span id="sync-error-message"></span>
+            <div class="pagination">
+                <div class="pagination-controls">
+                    {% if page and page > 1 %}
+                        <a class="btn-link" href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page - 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}#products-table-section">
+                            ← Poprzednia
+                        </a>
+                    {% endif %}
+
+                    {% if page and total_pages and page < total_pages %}
+                        <a class="btn-link" href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page + 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}#products-table-section">
+                            Następna →
+                        </a>
+                    {% endif %}
+                </div>
+
+                <div class="pagination-info">Strona {{ page }} z {{ total_pages }}</div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <form method="get" action="/admin" class="toolbar">
-        <input type="text" name="q" value="{{ q or '' }}" placeholder="Szukaj po ID lub symbol-kolor">
-        <input type="hidden" name="sort" value="{{ sort or 'id_asc' }}">
-        <button type="submit">Szukaj</button>
+        <div class="section-spacer"></div>
 
-        <a href="/admin/export-csv?q={{ q or '' }}&sort={{ sort or 'id_asc' }}">Eksport CSV</a>
-        <a href="/admin/export-xlsx?q={{ q or '' }}&sort={{ sort or 'id_asc' }}">Eksport XLSX</a>
-    </form>
+        <section id="grouped-table-section" class="panel-card">
+            <div class="section-header">
+                <div class="section-title-wrap">
+                    <h2>Zagregowane po symbol-kolor</h2>
+                    <p>Widok zbiorczy łączący pozycje o tym samym symbolu i kolorze w jeden model.</p>
+                </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'id_asc' %}id_desc{% else %}id_asc{% endif %}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}">ID</a></th>
-                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'symbol_asc' %}symbol_desc{% else %}symbol_asc{% endif %}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}">symbol-kolor</a></th>
-                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'm1_asc' %}m1_desc{% else %}m1_asc{% endif %}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}">stan dyspozycyjny (M1)</a></th>
-                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'rez_asc' %}rez_desc{% else %}rez_asc{% endif %}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}">rezerwacje</a></th>
-                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'sold_asc' %}sold_desc{% else %}sold_asc{% endif %}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}">Całkowita liczba sprzedanych</a></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in rows %}
-            <tr>
-                <td>{{ row.id }}</td>
-                <td>{{ row.symbol_kolor }}</td>
-                <td>{{ row.m1_stan_dyspozycyjny }}</td>
-                <td>{{ row.rezerwacje }}</td>
-                <td>{{ row.calkowita_liczba_sprzedanych }}</td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="5">Brak danych</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                <a class="section-anchor-link" href="#products-table-section">Wróć do tabeli produktów ↑</a>
+            </div>
 
-    <div class="pagination">
-        {% if page and page > 1 %}
-            <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page - 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}">← Poprzednia</a>
-        {% endif %}
+            <form method="get" action="/admin#grouped-table-section" class="toolbar">
+                <input type="hidden" name="q" value="{{ q or '' }}">
+                <input type="hidden" name="sort" value="{{ sort or 'id_asc' }}">
+                <input type="hidden" name="page" value="{{ page or 1 }}">
 
-        <span>Strona {{ page }} z {{ total_pages }}</span>
+                <input type="text" name="grouped_q" value="{{ grouped_q or '' }}" placeholder="Szukaj po symbol-kolor">
+                <input type="hidden" name="grouped_sort" value="{{ grouped_sort or 'symbol_asc' }}">
+                <button type="submit">Szukaj</button>
 
-        {% if page and total_pages and page < total_pages %}
-            <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page + 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}">Następna →</a>
-        {% endif %}
-    </div>
+                <a class="btn-link" href="/admin/export-grouped-csv?grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}">
+                    Eksport CSV
+                </a>
+                <a class="btn-link" href="/admin/export-grouped-xlsx?grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}">
+                    Eksport XLSX
+                </a>
+            </form>
 
-    <hr class="section-separator">
+            <div class="table-shell">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>
+                                <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={% if grouped_sort == 'symbol_asc' %}symbol_desc{% else %}symbol_asc{% endif %}&grouped_page={{ grouped_page or 1 }}#grouped-table-section">
+                                    symbol-kolor
+                                </a>
+                            </th>
+                            <th>
+                                <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={% if grouped_sort == 'sold_sum_asc' %}sold_sum_desc{% else %}sold_sum_asc{% endif %}&grouped_page={{ grouped_page or 1 }}#grouped-table-section">
+                                    Łączna liczba sprzedanych
+                                </a>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in grouped_rows %}
+                        <tr>
+                            <td>{{ row.symbol_kolor }}</td>
+                            <td>{{ row.laczna_liczba_sprzedanych }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2">Brak danych</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-    <h2>Zagregowane po symbol-kolor</h2>
+            <div class="pagination">
+                <div class="pagination-controls">
+                    {% if grouped_page and grouped_page > 1 %}
+                        <a class="btn-link" href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page - 1 }}#grouped-table-section">
+                            ← Poprzednia
+                        </a>
+                    {% endif %}
 
-    <form method="get" action="/admin" class="toolbar">
-        <input type="hidden" name="q" value="{{ q or '' }}">
-        <input type="hidden" name="sort" value="{{ sort or 'id_asc' }}">
-        <input type="hidden" name="page" value="{{ page or 1 }}">
+                    {% if grouped_page and grouped_total_pages and grouped_page < grouped_total_pages %}
+                        <a class="btn-link" href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page + 1 }}#grouped-table-section">
+                            Następna →
+                        </a>
+                    {% endif %}
+                </div>
 
-        <input type="text" name="grouped_q" value="{{ grouped_q or '' }}" placeholder="Szukaj po symbol-kolor">
-        <input type="hidden" name="grouped_sort" value="{{ grouped_sort or 'symbol_asc' }}">
-        <button type="submit">Szukaj</button>
-
-        <a href="/admin/export-grouped-csv?grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}">
-            Eksport CSV
-        </a>
-        <a href="/admin/export-grouped-xlsx?grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}">
-            Eksport XLSX
-        </a>
-    </form>
-
-    <table>
-        <thead>
-            <tr>
-                <th>
-                    <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={% if grouped_sort == 'symbol_asc' %}symbol_desc{% else %}symbol_asc{% endif %}&grouped_page={{ grouped_page or 1 }}">
-                        symbol-kolor
-                    </a>
-                </th>
-                <th>
-                    <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={% if grouped_sort == 'sold_sum_asc' %}sold_sum_desc{% else %}sold_sum_asc{% endif %}&grouped_page={{ grouped_page or 1 }}">
-                        Łączna liczba sprzedanych
-                    </a>
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in grouped_rows %}
-            <tr>
-                <td>{{ row.symbol_kolor }}</td>
-                <td>{{ row.laczna_liczba_sprzedanych }}</td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="2">Brak danych</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <div class="pagination">
-        {% if grouped_page and grouped_page > 1 %}
-            <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page - 1 }}">
-                ← Poprzednia
-            </a>
-        {% endif %}
-
-        <span>Strona {{ grouped_page }} z {{ grouped_total_pages }}</span>
-
-        {% if grouped_page and grouped_total_pages and grouped_page < grouped_total_pages %}
-            <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page + 1 }}">
-                Następna →
-            </a>
-        {% endif %}
+                <div class="pagination-info">Strona {{ grouped_page }} z {{ grouped_total_pages }}</div>
+            </div>
+        </section>
     </div>
 
     <script>
