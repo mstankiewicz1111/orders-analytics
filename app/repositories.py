@@ -166,3 +166,72 @@ def get_latest_sync_run(db):
             """
         )
     ).mappings().first()
+
+def count_aggregated_symbol_rows(db, q: str = "") -> int:
+    params = {}
+    sql = _base_cte_sql() + """
+    , grouped_symbols AS (
+        SELECT
+            symbol_kolor,
+            SUM(calkowita_liczba_sprzedanych) AS laczna_liczba_sprzedanych
+        FROM aggregated
+        GROUP BY symbol_kolor
+    )
+    SELECT COUNT(*)
+    FROM grouped_symbols
+    WHERE 1=1
+    """
+
+    if q:
+        sql += " AND symbol_kolor ILIKE :q "
+        params["q"] = f"%{q}%"
+
+    return int(db.execute(text(sql), params).scalar() or 0)
+
+
+def get_aggregated_symbol_rows(
+    db,
+    q: str = "",
+    sort: str = "symbol_asc",
+    page: int = 1,
+    per_page: int = 50,
+):
+    params = {
+        "limit": per_page,
+        "offset": (page - 1) * per_page,
+    }
+
+    symbol_sort_map = {
+        "symbol_asc": "symbol_kolor ASC",
+        "symbol_desc": "symbol_kolor DESC",
+        "sold_sum_asc": "laczna_liczba_sprzedanych ASC",
+        "sold_sum_desc": "laczna_liczba_sprzedanych DESC",
+    }
+
+    order_by = symbol_sort_map.get(sort, "symbol_kolor ASC")
+
+    sql = _base_cte_sql() + """
+    , grouped_symbols AS (
+        SELECT
+            symbol_kolor,
+            SUM(calkowita_liczba_sprzedanych) AS laczna_liczba_sprzedanych
+        FROM aggregated
+        GROUP BY symbol_kolor
+    )
+    SELECT
+        symbol_kolor,
+        laczna_liczba_sprzedanych
+    FROM grouped_symbols
+    WHERE 1=1
+    """
+
+    if q:
+        sql += " AND symbol_kolor ILIKE :q "
+        params["q"] = f"%{q}%"
+
+    sql += f"""
+    ORDER BY {order_by}
+    LIMIT :limit OFFSET :offset
+    """
+
+    return db.execute(text(sql), params).mappings().all()
