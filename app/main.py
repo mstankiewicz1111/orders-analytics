@@ -1,167 +1,209 @@
 import csv
 import io
-import math
-from urllib.parse import urlencode
+from math import ceil
 
-from fastapi import Depends, FastAPI, Form, Request
+from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
+from sqlalchemy.orm import Session
+from openpyxl import Workbook
 
-from .auth import is_session_authenticated, login_user, logout_user, require_api_auth, verify_credentials
+from .auth import (
+    is_session_authenticated,
+    login_user,
+    logout_user,
+    require_api_auth,
+    verify_credentials,
+)
 from .db import get_db
-from .repositories import count_table_rows, get_all_table_rows, get_last_sync_runs, get_table_rows
+from .repositories import count_table_rows, get_table_rows
 from .settings import settings
-from .sync_service import sync_all
+from .sync_service import run_sync
 
-app = FastAPI(title='Wassyl stock panel')
-app.add_middleware(SessionMiddleware, secret_key=settings.session_secret, same_site='lax', https_only=False)
-templates = Jinja2Templates(directory='app/templates')
-
-
-SORT_LABELS = {
-    'id': 'ID',
-    'symbol_kolor': 'symbol-kolor',
-    'm1': 'stan dyspozycyjny (M1)',
-    'rezerwacje': 'rezerwacje',
-}
+app = FastAPI()
+app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
+templates = Jinja2Templates(directory="app/templates")
 
 
-def build_url(base: str, **params) -> str:
-    clean = {k: v for k, v in params.items() if v not in (None, '', [])}
-    query = urlencode(clean)
-    return f'{base}?{query}' if query else base
+@app.get("/", response_class=HTMLResponse)
+def root():
+    return RedirectResponse(url="/login", status_code=302)
 
 
-@app.get('/health')
-def healthcheck():
-    return {'status': 'ok'}
-
-
-@app.get('/login', response_class=HTMLResponse)
-def login_page(request: Request, next: str = '/admin', error: str | None = None):
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request):
     if is_session_authenticated(request):
-        return RedirectResponse(url=next, status_code=303)
-    return templates.TemplateResponse('login.html', {'request': request, 'next': next, 'error': error})
+        return RedirectResponse(url="/admin", status_code=302)
+    return templates.TemplateResponse("login.html", {"request": request, "error": None})
 
 
-@app.post('/login', response_class=HTMLResponse)
-def login_submit(request: Request, username: str = Form(...), password: str = Form(...), next: str = Form('/admin')):
-    if verify_credentials(username, password):
-        login_user(request)
-        return RedirectResponse(url=next or '/admin', status_code=303)
+@app.post("/login", response_class=HTMLResponse)
+def login_submit(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+):
+    if not verify_credentials(username, password):
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": "Nieprawidłowy login lub hasło."},
+            status_code=401,
+        )
+
+    login_user(request)
+    return RedirectResponse(url="/admin", status_code=303)
+
+
+@app.get("/logout")
+def logout(request: Request):
+    logout_user(request)
+    return RedirectResponse(url="/login", status_code=302)
+
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin_panel(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    if not is_session_authenticated(request):
+        return RedirectResponse(url="/login?next=/admin", status_code=303)
+
+    q = (request.query_params.get("q") or "").strip()
+    sort = (request.query_params.get("sort") or "id_asc").strip()
+    page = max(int(request.query_params.get("page", 1)), 1)
+    per_page = 50
+
+    total = count_table_rows(db, q=q)
+    total_pages = max(ceil(total / per_page), 1)
+
+    if page > total_pages:
+        page = total_pages
+
+    rows = get_table_rows(db, q=q, sort=sort, page=page, per_page=per_page)
+
     return templates.TemplateResponse(
-        'login.html',
-        {'request': request, 'next': next, 'error': 'Nieprawidłowy login lub hasło.'},
-        status_code=401,
+        "table.html",
+        {
+            "request": request,
+            "rows": rows,
+            "q": q,
+            "sort": sort,
+            "page": page,
+            "total_pages": total_pages,
+            "total": total,
+        },
     )
 
 
-@app.post('/logout')
-def logout(request: Request):
-    logout_user(request)
-    return RedirectResponse(url='/login', status_code=303)
-
-
-@app.get('/api/table', dependencies=[Depends(require_api_auth)])
-def api_table(
-    q: str | None = None,
-    sort: str = 'id',
-    direction: str = 'asc',
-    page: int = 1,
-    per_page: int = settings.table_page_size,
-    db: Session = Depends(get_db),
-):
-    total = count_table_rows(db, q=q)
-    rows = list(get_table_rows(db, q=q, sort=sort, direction=direction, page=page, per_page=per_page))
-    return {
-        'rows': rows,
-        'page': page,
-        'per_page': per_page,
-        'total': total,
-        'pages': math.ceil(total / per_page) if per_page else 1,
-        'sort': sort,
-        'direction': direction,
-        'q': q or '',
-    }
-
-
-@app.get('/api/sync-status', dependencies=[Depends(require_api_auth)])
-def api_sync_status(db: Session = Depends(get_db)):
-    return list(get_last_sync_runs(db, limit=20))
-
-
-@app.get('/admin', response_class=HTMLResponse)
-def admin_panel(
+@app.post("/admin/sync")
+def admin_sync(
     request: Request,
-    q: str | None = None,
-    sort: str = 'id',
-    direction: str = 'asc',
-    page: int = 1,
-    per_page: int = settings.table_page_size,
     db: Session = Depends(get_db),
 ):
-    if not is_session_authenticated(request):
-        return RedirectResponse(url=build_url('/login', next=str(request.url.path)), status_code=303)
-
-    total = count_table_rows(db, q=q)
-    per_page = max(1, min(per_page, 500))
-    pages = max(1, math.ceil(total / per_page)) if total else 1
-    page = min(max(page, 1), pages)
-
-    rows = get_table_rows(db, q=q, sort=sort, direction=direction, page=page, per_page=per_page)
-    runs = get_last_sync_runs(db, limit=10)
-
-    def next_direction(column: str) -> str:
-        if sort == column and direction == 'asc':
-            return 'desc'
-        return 'asc'
-
-    context = {
-        'request': request,
-        'rows': rows,
-        'runs': runs,
-        'q': q or '',
-        'sort': sort,
-        'direction': direction,
-        'page': page,
-        'per_page': per_page,
-        'total': total,
-        'pages': pages,
-        'sort_labels': SORT_LABELS,
-        'next_direction': next_direction,
-        'build_url': build_url,
-    }
-    return templates.TemplateResponse('table.html', context)
+    require_api_auth(request)
+    run_sync(db)
+    return RedirectResponse(url="/admin", status_code=303)
 
 
-@app.post('/admin/sync')
-def admin_sync(request: Request, db: Session = Depends(get_db)):
-    if not is_session_authenticated(request):
-        return RedirectResponse(url=build_url('/login', next='/admin'), status_code=303)
-    sync_all(db)
-    return RedirectResponse(url='/admin', status_code=303)
-
-
-@app.get('/admin/export.csv')
+@app.get("/admin/export-csv")
 def export_csv(
     request: Request,
-    q: str | None = None,
-    sort: str = 'id',
-    direction: str = 'asc',
     db: Session = Depends(get_db),
 ):
     if not is_session_authenticated(request):
-        return RedirectResponse(url=build_url('/login', next='/admin'), status_code=303)
+        return RedirectResponse(url="/login?next=/admin", status_code=303)
 
-    rows = get_all_table_rows(db, q=q, sort=sort, direction=direction)
-    buffer = io.StringIO()
-    writer = csv.writer(buffer, delimiter=';')
-    writer.writerow(['ID', 'symbol-kolor', 'stan dyspozycyjny (M1)', 'rezerwacje'])
+    q = (request.query_params.get("q") or "").strip()
+    sort = (request.query_params.get("sort") or "id_asc").strip()
+
+    rows = get_table_rows(db, q=q, sort=sort, page=1, per_page=100000)
+
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=";")
+
+    writer.writerow([
+        "ID",
+        "symbol-kolor",
+        "stan dyspozycyjny (M1)",
+        "rezerwacje",
+        "Całkowita liczba sprzedanych",
+    ])
+
     for row in rows:
-        writer.writerow([row['id'], row['symbol_kolor'], row['m1_stan_dyspozycyjny'], row['rezerwacje']])
+        writer.writerow([
+            row["id"],
+            row["symbol_kolor"],
+            row["m1_stan_dyspozycyjny"],
+            row["rezerwacje"],
+            row["calkowita_liczba_sprzedanych"],
+        ])
 
-    content = io.BytesIO(buffer.getvalue().encode('utf-8-sig'))
-    headers = {'Content-Disposition': 'attachment; filename="stany_m1.csv"'}
-    return StreamingResponse(content, media_type='text/csv; charset=utf-8', headers=headers)
+    output.seek(0)
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="stany_magazynowe.csv"'
+        },
+    )
+
+
+@app.get("/admin/export-xlsx")
+def export_xlsx(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    if not is_session_authenticated(request):
+        return RedirectResponse(url="/login?next=/admin", status_code=303)
+
+    q = (request.query_params.get("q") or "").strip()
+    sort = (request.query_params.get("sort") or "id_asc").strip()
+
+    rows = get_table_rows(db, q=q, sort=sort, page=1, per_page=100000)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Stany"
+
+    headers = [
+        "ID",
+        "symbol-kolor",
+        "stan dyspozycyjny (M1)",
+        "rezerwacje",
+        "Całkowita liczba sprzedanych",
+    ]
+    ws.append(headers)
+
+    for row in rows:
+        ws.append([
+            row["id"],
+            row["symbol_kolor"],
+            row["m1_stan_dyspozycyjny"],
+            row["rezerwacje"],
+            row["calkowita_liczba_sprzedanych"],
+        ])
+
+    # proste autoszerokości
+    widths = {
+        "A": 12,
+        "B": 30,
+        "C": 24,
+        "D": 14,
+        "E": 28,
+    }
+    for col, width in widths.items():
+        ws.column_dimensions[col].width = width
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": 'attachment; filename="stany_magazynowe.xlsx"'
+        },
+    )
