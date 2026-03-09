@@ -2,6 +2,9 @@ import csv
 import io
 from math import ceil
 
+from fastapi.responses import JSONResponse
+from .repositories import count_table_rows, get_last_sync_info, get_latest_sync_run, get_table_rows
+
 from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
@@ -233,3 +236,35 @@ def export_xlsx(
             "Content-Disposition": 'attachment; filename="stany_magazynowe.xlsx"'
         },
     )
+
+@app.get("/admin/sync-status")
+def admin_sync_status(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    if not is_session_authenticated(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    row = get_latest_sync_run(db)
+    if not row:
+        return {
+            "status": "idle",
+            "started_at": None,
+            "finished_at": None,
+            "products_found": 0,
+            "batches_processed": 0,
+            "rows_written_current": 0,
+            "rows_written_history": 0,
+            "error_message": None,
+        }
+
+    return {
+        "status": row["status"],
+        "started_at": format_dt_pl(row["started_at"]),
+        "finished_at": format_dt_pl(row["finished_at"]) if row["finished_at"] else None,
+        "products_found": row["products_found"],
+        "batches_processed": row["batches_processed"],
+        "rows_written_current": row["rows_written_current"],
+        "rows_written_history": row["rows_written_history"],
+        "error_message": row["error_message"],
+    }
