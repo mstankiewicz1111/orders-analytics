@@ -27,6 +27,14 @@ def _base_cte_sql() -> str:
                 WHEN (
                     COALESCE(SUM(s.quantity - s.reserved_orders), 0)
                     + COALESCE(SUM(s.reserved_orders), 0)
+                ) > 2000
+                THEN 3000 - (
+                    COALESCE(SUM(s.quantity - s.reserved_orders), 0)
+                    + COALESCE(SUM(s.reserved_orders), 0)
+                )
+                WHEN (
+                    COALESCE(SUM(s.quantity - s.reserved_orders), 0)
+                    + COALESCE(SUM(s.reserved_orders), 0)
                 ) > 1000
                 THEN 2000 - (
                     COALESCE(SUM(s.quantity - s.reserved_orders), 0)
