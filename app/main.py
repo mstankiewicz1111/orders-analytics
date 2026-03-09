@@ -90,15 +90,33 @@ def admin_panel(
     q = (request.query_params.get("q") or "").strip()
     sort = (request.query_params.get("sort") or "id_asc").strip()
     page = max(int(request.query_params.get("page", 1)), 1)
+
+    grouped_q = (request.query_params.get("grouped_q") or "").strip()
+    grouped_sort = (request.query_params.get("grouped_sort") or "symbol_asc").strip()
+    grouped_page = max(int(request.query_params.get("grouped_page", 1)), 1)
+
     per_page = 50
 
     total = count_table_rows(db, q=q)
     total_pages = max(ceil(total / per_page), 1)
-
     if page > total_pages:
         page = total_pages
 
     rows = get_table_rows(db, q=q, sort=sort, page=page, per_page=per_page)
+
+    grouped_total = count_aggregated_symbol_rows(db, q=grouped_q)
+    grouped_total_pages = max(ceil(grouped_total / per_page), 1)
+    if grouped_page > grouped_total_pages:
+        grouped_page = grouped_total_pages
+
+    grouped_rows = get_aggregated_symbol_rows(
+        db,
+        q=grouped_q,
+        sort=grouped_sort,
+        page=grouped_page,
+        per_page=per_page,
+    )
+
     sync_info = get_last_sync_info(db)
 
     formatted_last_data_fetch_at = format_dt_pl(sync_info["last_data_fetch_at"])
@@ -123,6 +141,14 @@ def admin_panel(
             "page": page,
             "total_pages": total_pages,
             "total": total,
+
+            "grouped_rows": grouped_rows,
+            "grouped_q": grouped_q,
+            "grouped_sort": grouped_sort,
+            "grouped_page": grouped_page,
+            "grouped_total_pages": grouped_total_pages,
+            "grouped_total": grouped_total,
+
             "last_data_fetch_at": formatted_last_data_fetch_at,
             "last_run": sync_info["last_run"],
             "last_run_started_at": formatted_last_run_started_at,
@@ -285,3 +311,109 @@ def admin_sync_status(
         "rows_written_history": row["rows_written_history"],
         "error_message": row["error_message"],
     }
+
+@app.get("/admin/export-grouped-csv")
+def export_grouped_csv(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    if not is_session_authenticated(request):
+        return RedirectResponse(url="/login?next=/admin", status_code=303)
+
+    grouped_q = (request.query_params.get("grouped_q") or "").strip()
+    grouped_sort = (request.query_params.get("grouped_sort") or "symbol_asc").strip()
+
+    rows = get_aggregated_symbol_rows(
+        db,
+        q=grouped_q,
+        sort=grouped_sort,
+        page=1,
+        per_page=100000,
+    )
+
+    sync_info = get_last_sync_info(db)
+    formatted_last_data_fetch_at = format_dt_pl(sync_info["last_data_fetch_at"])
+
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=";")
+
+    writer.writerow(["Data ostatniego pobrania danych", formatted_last_data_fetch_at or "brak danych"])
+    writer.writerow([])
+
+    writer.writerow([
+        "symbol-kolor",
+        "Łączna liczba sprzedanych",
+    ])
+
+    for row in rows:
+        writer.writerow([
+            row["symbol_kolor"],
+            row["laczna_liczba_sprzedanych"],
+        ])
+
+    output.seek(0)
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="stany_zagregowane.csv"'
+        },
+    )
+
+
+@app.get("/admin/export-grouped-xlsx")
+def export_grouped_xlsx(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    if not is_session_authenticated(request):
+        return RedirectResponse(url="/login?next=/admin", status_code=303)
+
+    grouped_q = (request.query_params.get("grouped_q") or "").strip()
+    grouped_sort = (request.query_params.get("grouped_sort") or "symbol_asc").strip()
+
+    rows = get_aggregated_symbol_rows(
+        db,
+        q=grouped_q,
+        sort=grouped_sort,
+        page=1,
+        per_page=100000,
+    )
+
+    sync_info = get_last_sync_info(db)
+    formatted_last_data_fetch_at = format_dt_pl(sync_info["last_data_fetch_at"])
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Zagregowane"
+
+    ws["A1"] = "Data ostatniego pobrania danych"
+    ws["B1"] = formatted_last_data_fetch_at or "brak danych"
+
+    ws.append([])
+    ws.append([
+        "symbol-kolor",
+        "Łączna liczba sprzedanych",
+    ])
+
+    for row in rows:
+        ws.append([
+            row["symbol_kolor"],
+            row["laczna_liczba_sprzedanych"],
+        ])
+
+    ws.column_dimensions["A"].width = 30
+    ws.column_dimensions["B"].width = 26
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": 'attachment; filename="stany_zagregowane.xlsx"'
+        },
+    )
