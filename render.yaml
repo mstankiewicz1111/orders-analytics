@@ -28,12 +28,12 @@ services:
         sync: false
 
   - type: cron
-    name: wassyl-stock-sync-daily
+    name: wassyl-feed-refresh-daily
     env: python
     plan: starter
-    schedule: "15 2 * * *"
+    schedule: "0 6 * * *"
     buildCommand: pip install -r requirements.txt
-    startCommand: python -m scripts.run_sync
+    startCommand: python -m scripts.run_feed_refresh
     envVars:
       - key: DATABASE_URL
         fromDatabase:
