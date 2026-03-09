@@ -137,3 +137,24 @@ def get_last_sync_info(db):
         "last_data_fetch_at": row["last_data_fetch_at"] if row else None,
         "last_run": sync_row,
     }
+
+def get_latest_sync_run(db):
+    return db.execute(
+        text(
+            """
+            SELECT
+                id,
+                started_at,
+                finished_at,
+                status,
+                products_found,
+                batches_processed,
+                rows_written_current,
+                rows_written_history,
+                error_message
+            FROM sync_runs
+            ORDER BY id DESC
+            LIMIT 1
+            """
+        )
+    ).mappings().first()
