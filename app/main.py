@@ -90,21 +90,26 @@ def admin_panel(
 
     rows = get_table_rows(db, q=q, sort=sort, page=page, per_page=per_page)
     sync_info = get_last_sync_info(db)
+    formatted_last_data_fetch_at = format_dt_pl(sync_info["last_data_fetch_at"])
+    formatted_last_run_started_at = format_dt_pl(sync_info["last_run"]["started_at"]) if sync_info["last_run"] else None
+    formatted_last_run_finished_at = format_dt_pl(sync_info["last_run"]["finished_at"]) if sync_info["last_run"] and sync_info["last_run"]["finished_at"] else None
 
     return templates.TemplateResponse(
-        "table.html",
-        {
-            "request": request,
-            "rows": rows,
-            "q": q,
-            "sort": sort,
-            "page": page,
-            "total_pages": total_pages,
-            "total": total,
-            "last_data_fetch_at": sync_info["last_data_fetch_at"],
-            "last_run": sync_info["last_run"],
-        },
-    )
+    "table.html",
+    {
+        "request": request,
+        "rows": rows,
+        "q": q,
+        "sort": sort,
+        "page": page,
+        "total_pages": total_pages,
+        "total": total,
+        "last_data_fetch_at": formatted_last_data_fetch_at = format_dt_pl(sync_info["last_data_fetch_at"]),
+        "last_run": sync_info["last_run"],
+        "last_run_started_at": formatted_last_run_started_at,
+        "last_run_finished_at": formatted_last_run_finished_at,
+    },
+)
 
 
 @app.post("/admin/sync")
@@ -135,7 +140,7 @@ def export_csv(
     output = io.StringIO()
     writer = csv.writer(output, delimiter=";")
 
-    writer.writerow(["Data ostatniego pobrania danych", last_data_fetch_at or "brak danych"])
+    writer.writerow(["Data ostatniego pobrania danych", formatted_last_data_fetch_at or "brak danych"])
     writer.writerow([])
 
     writer.writerow([
@@ -186,8 +191,8 @@ def export_xlsx(
     ws.title = "Stany"
 
     ws["A1"] = "Data ostatniego pobrania danych"
-    ws["B1"] = str(last_data_fetch_at or "brak danych")
-
+    ws["B1"] = formatted_last_data_fetch_at or "brak danych"
+    
     headers = [
         "ID",
         "symbol-kolor",
