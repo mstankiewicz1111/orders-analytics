@@ -1,135 +1,91 @@
 <!doctype html>
 <html lang="pl">
-  <head>
+<head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Panel stanów M1</title>
+    <title>Panel stanów</title>
     <style>
-      body { font-family: Arial, sans-serif; margin: 24px; color: #222; }
-      h1, h2 { margin-bottom: 12px; }
-      .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-      .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
-      input[type="text"], select { padding: 8px; min-width: 180px; }
-      button, .button-link { padding: 8px 14px; cursor: pointer; text-decoration: none; color: inherit; border: 1px solid #bbb; background: white; border-radius: 6px; display: inline-block; }
-      table { border-collapse: collapse; width: 100%; margin-top: 12px; }
-      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-      th { background: #f5f5f5; }
-      th a { color: inherit; text-decoration: none; }
-      .low-stock { background: #fff1f1; }
-      .meta { color: #666; font-size: 14px; }
-      .pagination { display: flex; gap: 8px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
-      .stats { color: #555; font-size: 14px; }
-      .right { display: flex; gap: 8px; align-items: center; }
-      form.inline { display: inline; margin: 0; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 24px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 10px;
+            text-align: left;
+        }
+        th a {
+            text-decoration: none;
+            color: inherit;
+        }
+        th {
+            background: #f5f5f5;
+        }
+        .toolbar {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .pagination {
+            margin-top: 16px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
     </style>
-  </head>
-  <body>
-    <div class="topbar">
-      <div>
-        <h1>Panel stanów M1</h1>
-        <p class="meta">Kolumny: ID, symbol-kolor, stan dyspozycyjny (M1), rezerwacje.</p>
-      </div>
-      <div class="right">
-        <a class="button-link" href="{{ build_url('/admin/export.csv', q=q, sort=sort, direction=direction) }}">Eksport CSV</a>
-        <form class="inline" method="post" action="/logout">
-          <button type="submit">Wyloguj</button>
-        </form>
-      </div>
-    </div>
+</head>
+<body>
+    <h1>Stany magazynowe</h1>
 
-    <div class="toolbar">
-      <form method="get" action="/admin">
-        <input type="text" name="q" value="{{ q }}" placeholder="Szukaj po ID, symbolu lub kolorze">
-        <input type="hidden" name="sort" value="{{ sort }}">
-        <input type="hidden" name="direction" value="{{ direction }}">
-        <select name="per_page">
-          {% for size in [50, 100, 200, 500] %}
-            <option value="{{ size }}" {% if per_page == size %}selected{% endif %}>{{ size }} / strona</option>
-          {% endfor %}
-        </select>
+    <form method="get" action="/admin" class="toolbar">
+        <input type="text" name="q" value="{{ q or '' }}" placeholder="Szukaj po ID lub symbol-kolor">
+        <input type="hidden" name="sort" value="{{ sort or 'id_asc' }}">
         <button type="submit">Szukaj</button>
-      </form>
-
-      <form method="post" action="/admin/sync">
-        <button type="submit">Uruchom synchronizację</button>
-      </form>
-    </div>
-
-    <div class="stats">Łącznie rekordów: {{ total }} • Strona {{ page }} z {{ pages }}</div>
+        <a href="/admin/export-csv?q={{ q or '' }}&sort={{ sort or 'id_asc' }}">Eksport CSV</a>
+    </form>
 
     <table>
-      <thead>
-        <tr>
-          {% for key, label in sort_labels.items() %}
-            <th>
-              <a href="{{ build_url('/admin', q=q, sort=key, direction=next_direction(key), page=1, per_page=per_page) }}">
-                {{ label }}
-                {% if sort == key %}
-                  {% if direction == 'asc' %}↑{% else %}↓{% endif %}
-                {% endif %}
-              </a>
-            </th>
-          {% endfor %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in rows %}
-          <tr class="{% if row.m1_stan_dyspozycyjny <= 0 %}low-stock{% endif %}">
-            <td>{{ row.id }}</td>
-            <td>{{ row.symbol_kolor }}</td>
-            <td>{{ row.m1_stan_dyspozycyjny }}</td>
-            <td>{{ row.rezerwacje }}</td>
-          </tr>
-        {% endfor %}
-        {% if not rows %}
-          <tr>
-            <td colspan="4">Brak danych dla wybranego filtra.</td>
-          </tr>
-        {% endif %}
-      </tbody>
+        <thead>
+            <tr>
+                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'id_asc' %}id_desc{% else %}id_asc{% endif %}">ID</a></th>
+                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'symbol_asc' %}symbol_desc{% else %}symbol_asc{% endif %}">symbol-kolor</a></th>
+                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'm1_asc' %}m1_desc{% else %}m1_asc{% endif %}">stan dyspozycyjny (M1)</a></th>
+                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'rez_asc' %}rez_desc{% else %}rez_asc{% endif %}">rezerwacje</a></th>
+                <th><a href="/admin?q={{ q or '' }}&sort={% if sort == 'sold_asc' %}sold_desc{% else %}sold_asc{% endif %}">Całkowita liczba sprzedanych</a></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td>{{ row.id }}</td>
+                <td>{{ row.symbol_kolor }}</td>
+                <td>{{ row.m1_stan_dyspozycyjny }}</td>
+                <td>{{ row.rezerwacje }}</td>
+                <td>{{ row.calkowita_liczba_sprzedanych }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5">Brak danych</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
 
     <div class="pagination">
-      {% if page > 1 %}
-        <a class="button-link" href="{{ build_url('/admin', q=q, sort=sort, direction=direction, page=1, per_page=per_page) }}">« Pierwsza</a>
-        <a class="button-link" href="{{ build_url('/admin', q=q, sort=sort, direction=direction, page=page-1, per_page=per_page) }}">‹ Poprzednia</a>
-      {% endif %}
-      {% if page < pages %}
-        <a class="button-link" href="{{ build_url('/admin', q=q, sort=sort, direction=direction, page=page+1, per_page=per_page) }}">Następna ›</a>
-        <a class="button-link" href="{{ build_url('/admin', q=q, sort=sort, direction=direction, page=pages, per_page=per_page) }}">Ostatnia »</a>
-      {% endif %}
-    </div>
+        {% if page and page > 1 %}
+            <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page - 1 }}">← Poprzednia</a>
+        {% endif %}
 
-    <h2>Ostatnie synchronizacje</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>start</th>
-          <th>koniec</th>
-          <th>status</th>
-          <th>produktów</th>
-          <th>paczek</th>
-          <th>current</th>
-          <th>history</th>
-          <th>błąd</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for run in runs %}
-          <tr>
-            <td>{{ run.id }}</td>
-            <td>{{ run.started_at or '' }}</td>
-            <td>{{ run.finished_at or '' }}</td>
-            <td>{{ run.status }}</td>
-            <td>{{ run.products_found }}</td>
-            <td>{{ run.batches_processed }}</td>
-            <td>{{ run.rows_written_current }}</td>
-            <td>{{ run.rows_written_history }}</td>
-            <td>{{ run.error_message or '' }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </body>
+        <span>Strona {{ page }} z {{ total_pages }}</span>
+
+        {% if page and total_pages and page < total_pages %}
+            <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page + 1 }}">Następna →</a>
+        {% endif %}
+    </div>
+</body>
 </html>
