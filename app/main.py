@@ -20,6 +20,8 @@ from .auth import (
 from .db import get_db
 from .repositories import (
     count_table_rows,
+    count_aggregated_symbol_rows,
+    get_aggregated_symbol_rows,
     get_last_sync_info,
     get_latest_sync_run,
     get_table_rows,
