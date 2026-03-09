@@ -43,11 +43,13 @@
     <h1>Stany magazynowe</h1>
 
     <form method="get" action="/admin" class="toolbar">
-        <input type="text" name="q" value="{{ q or '' }}" placeholder="Szukaj po ID lub symbol-kolor">
-        <input type="hidden" name="sort" value="{{ sort or 'id_asc' }}">
-        <button type="submit">Szukaj</button>
-        <a href="/admin/export-csv?q={{ q or '' }}&sort={{ sort or 'id_asc' }}">Eksport CSV</a>
-    </form>
+    <input type="text" name="q" value="{{ q or '' }}" placeholder="Szukaj po ID lub symbol-kolor">
+    <input type="hidden" name="sort" value="{{ sort or 'id_asc' }}">
+    <button type="submit">Szukaj</button>
+
+    <a href="/admin/export-csv?q={{ q or '' }}&sort={{ sort or 'id_asc' }}">Eksport CSV</a>
+    <a href="/admin/export-xlsx?q={{ q or '' }}&sort={{ sort or 'id_asc' }}">Eksport XLSX</a>
+</form>
 
     <table>
         <thead>
