@@ -19,6 +19,7 @@ def chunked(items: list[int], size: int):
         yield items[index:index + size]
 
 
+
 def create_sync_run(db: Session) -> int:
     run_id = db.execute(
         text(
@@ -31,6 +32,7 @@ def create_sync_run(db: Session) -> int:
     ).scalar_one()
     db.commit()
     return run_id
+
 
 
 def finalize_sync_run(
@@ -71,12 +73,19 @@ def finalize_sync_run(
     db.commit()
 
 
-def ensure_products_cache(db: Session) -> int:
+
+def refresh_products_cache(db: Session, *, force: bool = False) -> dict:
     existing_count = db.execute(
         text("SELECT COUNT(*) FROM production_products_cache WHERE expires_at > NOW()")
     ).scalar_one()
-    if existing_count > 0:
-        return int(existing_count)
+
+    if existing_count > 0 and not force:
+        return {
+            'products_found': int(existing_count),
+            'used_cached_data': True,
+            'refreshed_at': None,
+            'expires_at': None,
+        }
 
     db.execute(text("TRUNCATE TABLE production_products_cache"))
     db.commit()
@@ -99,8 +108,22 @@ def ensure_products_cache(db: Session) -> int:
                 'expires_at': expires_at,
             },
         )
+
     db.commit()
-    return len(rows)
+
+    return {
+        'products_found': len(rows),
+        'used_cached_data': False,
+        'refreshed_at': fetched_at,
+        'expires_at': expires_at,
+    }
+
+
+
+def ensure_products_cache(db: Session) -> int:
+    result = refresh_products_cache(db, force=False)
+    return int(result['products_found'])
+
 
 
 def sync_all(db: Session) -> dict:
