@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
 from openpyxl import Workbook
+from zoneinfo import ZoneInfo
 
 from .auth import (
     is_session_authenticated,
@@ -20,6 +21,13 @@ from .db import get_db
 from .repositories import count_table_rows, get_last_sync_info, get_table_rows
 from .settings import settings
 from .sync_service import sync_all
+
+WARSAW_TZ = ZoneInfo("Europe/Warsaw")
+
+def format_dt_pl(dt):
+    if not dt:
+        return None
+    return dt.astimezone(WARSAW_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
