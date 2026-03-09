@@ -2,7 +2,7 @@ import csv
 import io
 from math import ceil
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request
+from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -17,7 +17,7 @@ from .auth import (
     verify_credentials,
 )
 from .db import get_db
-from .repositories import count_table_rows, get_table_rows
+from .repositories import count_table_rows, get_last_sync_info, get_table_rows
 from .settings import settings
 from .sync_service import sync_all
 
@@ -81,6 +81,7 @@ def admin_panel(
         page = total_pages
 
     rows = get_table_rows(db, q=q, sort=sort, page=page, per_page=per_page)
+    sync_info = get_last_sync_info(db)
 
     return templates.TemplateResponse(
         "table.html",
@@ -92,6 +93,8 @@ def admin_panel(
             "page": page,
             "total_pages": total_pages,
             "total": total,
+            "last_data_fetch_at": sync_info["last_data_fetch_at"],
+            "last_run": sync_info["last_run"],
         },
     )
 
@@ -118,9 +121,14 @@ def export_csv(
     sort = (request.query_params.get("sort") or "id_asc").strip()
 
     rows = get_table_rows(db, q=q, sort=sort, page=1, per_page=100000)
+    sync_info = get_last_sync_info(db)
+    last_data_fetch_at = sync_info["last_data_fetch_at"]
 
     output = io.StringIO()
     writer = csv.writer(output, delimiter=";")
+
+    writer.writerow(["Data ostatniego pobrania danych", last_data_fetch_at or "brak danych"])
+    writer.writerow([])
 
     writer.writerow([
         "ID",
@@ -162,10 +170,15 @@ def export_xlsx(
     sort = (request.query_params.get("sort") or "id_asc").strip()
 
     rows = get_table_rows(db, q=q, sort=sort, page=1, per_page=100000)
+    sync_info = get_last_sync_info(db)
+    last_data_fetch_at = sync_info["last_data_fetch_at"]
 
     wb = Workbook()
     ws = wb.active
     ws.title = "Stany"
+
+    ws["A1"] = "Data ostatniego pobrania danych"
+    ws["B1"] = str(last_data_fetch_at or "brak danych")
 
     headers = [
         "ID",
@@ -174,6 +187,7 @@ def export_xlsx(
         "rezerwacje",
         "Całkowita liczba sprzedanych",
     ]
+    ws.append([])
     ws.append(headers)
 
     for row in rows:
@@ -185,7 +199,6 @@ def export_xlsx(
             row["calkowita_liczba_sprzedanych"],
         ])
 
-    # proste autoszerokości
     widths = {
         "A": 12,
         "B": 30,
