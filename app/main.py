@@ -19,7 +19,7 @@ from .auth import (
 from .db import get_db
 from .repositories import count_table_rows, get_table_rows
 from .settings import settings
-from .sync_service import run_sync
+from .sync_service import sync_all
 
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
@@ -102,7 +102,7 @@ def admin_sync(
     db: Session = Depends(get_db),
 ):
     require_api_auth(request)
-    run_sync(db)
+    sync_all(db)
     return RedirectResponse(url="/admin", status_code=303)
 
 
