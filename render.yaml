@@ -1,0 +1,61 @@
+services:
+  - type: web
+    name: wassyl-stock-panel
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: wassyl-stock-db
+          property: connectionString
+      - key: IDOSELL_API_BASE_URL
+        value: https://client5056.idosell.com/api/admin/v7
+      - key: FEED_URL
+        value: https://wassyl.pl/data/export/feed10013_1fe8530c72543507bd14a396.xml
+      - key: APP_TIMEZONE
+        value: Europe/Warsaw
+      - key: SYNC_BATCH_SIZE
+        value: "100"
+      - key: FEED_CACHE_TTL_HOURS
+        value: "24"
+      - key: REQUEST_TIMEOUT_SECONDS
+        value: "60"
+      - key: IDOSELL_API_KEY
+        sync: false
+      - key: ADMIN_TOKEN
+        sync: false
+
+  - type: cron
+    name: wassyl-stock-sync-daily
+    env: python
+    plan: starter
+    schedule: "15 2 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m scripts.run_sync
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: wassyl-stock-db
+          property: connectionString
+      - key: IDOSELL_API_BASE_URL
+        value: https://client5056.idosell.com/api/admin/v7
+      - key: FEED_URL
+        value: https://wassyl.pl/data/export/feed10013_1fe8530c72543507bd14a396.xml
+      - key: APP_TIMEZONE
+        value: Europe/Warsaw
+      - key: SYNC_BATCH_SIZE
+        value: "100"
+      - key: FEED_CACHE_TTL_HOURS
+        value: "24"
+      - key: REQUEST_TIMEOUT_SECONDS
+        value: "60"
+      - key: IDOSELL_API_KEY
+        sync: false
+      - key: ADMIN_TOKEN
+        sync: false
+
+databases:
+  - name: wassyl-stock-db
+    plan: starter
