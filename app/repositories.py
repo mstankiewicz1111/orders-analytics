@@ -21,42 +21,33 @@ def _base_cte_sql() -> str:
         SELECT
             p.product_id AS id,
             (p.symbol || '-' || p.kolor) AS symbol_kolor,
-            COALESCE(SUM(s.quantity - s.reserved_orders), 0) AS m1_stan_dyspozycyjny,
-            COALESCE(SUM(s.reserved_orders), 0) AS rezerwacje,
+            s.size_id,
+            (s.quantity - s.reserved_orders) AS m1_stan_dyspozycyjny,
+            s.reserved_orders AS rezerwacje,
+
             CASE
-                WHEN (
-                    COALESCE(SUM(s.quantity - s.reserved_orders), 0)
-                    + COALESCE(SUM(s.reserved_orders), 0)
-                ) > 2000
-                THEN 3000 - (
-                    COALESCE(SUM(s.quantity - s.reserved_orders), 0)
-                    + COALESCE(SUM(s.reserved_orders), 0)
-                )
-                WHEN (
-                    COALESCE(SUM(s.quantity - s.reserved_orders), 0)
-                    + COALESCE(SUM(s.reserved_orders), 0)
-                ) > 1000
-                THEN 2000 - (
-                    COALESCE(SUM(s.quantity - s.reserved_orders), 0)
-                    + COALESCE(SUM(s.reserved_orders), 0)
-                )
-                ELSE 1000 - (
-                    COALESCE(SUM(s.quantity - s.reserved_orders), 0)
-                    + COALESCE(SUM(s.reserved_orders), 0)
-                )
+                WHEN (s.quantity) > 2000
+                THEN 3000 - s.quantity
+                WHEN (s.quantity) > 1000
+                THEN 2000 - s.quantity
+                ELSE 1000 - s.quantity
             END AS calkowita_liczba_sprzedanych
+
         FROM production_products_cache p
-        LEFT JOIN product_stock_current s
+        JOIN product_stock_current s
           ON s.product_id = p.product_id
          AND s.stock_id = 1
-        WHERE p.expires_at > NOW()
-        GROUP BY p.product_id, p.symbol, p.kolor
+
+        WHERE
+            p.expires_at > NOW()
+            AND (s.quantity > 0 OR s.reserved_orders > 0)
     )
     """
 
 
 def count_table_rows(db, q: str = "") -> int:
     params = {}
+
     sql = _base_cte_sql() + """
     SELECT COUNT(*)
     FROM aggregated
@@ -76,6 +67,7 @@ def count_table_rows(db, q: str = "") -> int:
 
 
 def get_table_rows(db, q: str = "", sort: str = "id_asc", page: int = 1, per_page: int = 50):
+
     params = {
         "limit": per_page,
         "offset": (page - 1) * per_page,
@@ -87,6 +79,7 @@ def get_table_rows(db, q: str = "", sort: str = "id_asc", page: int = 1, per_pag
     SELECT
         id,
         symbol_kolor,
+        size_id,
         m1_stan_dyspozycyjny,
         rezerwacje,
         calkowita_liczba_sprzedanych
@@ -112,6 +105,7 @@ def get_table_rows(db, q: str = "", sort: str = "id_asc", page: int = 1, per_pag
 
 
 def get_last_sync_info(db):
+
     row = db.execute(
         text(
             """
@@ -146,7 +140,9 @@ def get_last_sync_info(db):
         "last_run": sync_row,
     }
 
+
 def get_latest_sync_run(db):
+
     return db.execute(
         text(
             """
@@ -167,15 +163,19 @@ def get_latest_sync_run(db):
         )
     ).mappings().first()
 
+
 def count_aggregated_symbol_rows(db, q: str = "") -> int:
+
     params = {}
+
     sql = _base_cte_sql() + """
     , grouped_symbols AS (
         SELECT
             symbol_kolor,
+            size_id,
             SUM(calkowita_liczba_sprzedanych) AS laczna_liczba_sprzedanych
         FROM aggregated
-        GROUP BY symbol_kolor
+        GROUP BY symbol_kolor, size_id
     )
     SELECT COUNT(*)
     FROM grouped_symbols
@@ -196,6 +196,7 @@ def get_aggregated_symbol_rows(
     page: int = 1,
     per_page: int = 50,
 ):
+
     params = {
         "limit": per_page,
         "offset": (page - 1) * per_page,
@@ -214,12 +215,14 @@ def get_aggregated_symbol_rows(
     , grouped_symbols AS (
         SELECT
             symbol_kolor,
+            size_id,
             SUM(calkowita_liczba_sprzedanych) AS laczna_liczba_sprzedanych
         FROM aggregated
-        GROUP BY symbol_kolor
+        GROUP BY symbol_kolor, size_id
     )
     SELECT
         symbol_kolor,
+        size_id,
         laczna_liczba_sprzedanych
     FROM grouped_symbols
     WHERE 1=1
