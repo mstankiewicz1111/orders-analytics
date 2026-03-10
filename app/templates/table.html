@@ -688,7 +688,11 @@
     </a>
 </th>
 <th>rozmiar</th>
-<th>rezerwacje</th>
+<th>
+<a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={% if grouped_sort == 'rez_asc' %}rez_desc{% else %}rez_asc{% endif %}&grouped_page={{ grouped_page or 1 }}#grouped-table-section">
+rezerwacje
+</a>
+</th>
 <th>
     <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={% if grouped_sort == 'sold_sum_asc' %}sold_sum_desc{% else %}sold_sum_asc{% endif %}&grouped_page={{ grouped_page or 1 }}#grouped-table-section">
         Łączna liczba sprzedanych
