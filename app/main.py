@@ -40,7 +40,7 @@ def format_dt_pl(dt):
 
 
 app = FastAPI()
-app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
+app.add_middleware(SessionMiddleware, secret_key=settings.session_secret or "change-me")
 templates = Jinja2Templates(directory="app/templates")
 
 
@@ -141,14 +141,12 @@ def admin_panel(
             "page": page,
             "total_pages": total_pages,
             "total": total,
-
             "grouped_rows": grouped_rows,
             "grouped_q": grouped_q,
             "grouped_sort": grouped_sort,
             "grouped_page": grouped_page,
             "grouped_total_pages": grouped_total_pages,
             "grouped_total": grouped_total,
-
             "last_data_fetch_at": formatted_last_data_fetch_at,
             "last_run": sync_info["last_run"],
             "last_run_started_at": formatted_last_run_started_at,
@@ -191,6 +189,7 @@ def export_csv(
     writer.writerow([
         "ID",
         "symbol-kolor",
+        "rozmiar",
         "stan dyspozycyjny (M1)",
         "rezerwacje",
         "Całkowita liczba sprzedanych",
@@ -200,6 +199,7 @@ def export_csv(
         writer.writerow([
             row["id"],
             row["symbol_kolor"],
+            row["size_id"],
             row["m1_stan_dyspozycyjny"],
             row["rezerwacje"],
             row["calkowita_liczba_sprzedanych"],
@@ -241,6 +241,7 @@ def export_xlsx(
     headers = [
         "ID",
         "symbol-kolor",
+        "rozmiar",
         "stan dyspozycyjny (M1)",
         "rezerwacje",
         "Całkowita liczba sprzedanych",
@@ -252,6 +253,7 @@ def export_xlsx(
         ws.append([
             row["id"],
             row["symbol_kolor"],
+            row["size_id"],
             row["m1_stan_dyspozycyjny"],
             row["rezerwacje"],
             row["calkowita_liczba_sprzedanych"],
@@ -260,9 +262,10 @@ def export_xlsx(
     widths = {
         "A": 12,
         "B": 30,
-        "C": 24,
-        "D": 14,
-        "E": 28,
+        "C": 16,
+        "D": 24,
+        "E": 14,
+        "F": 28,
     }
     for col, width in widths.items():
         ws.column_dimensions[col].width = width
@@ -312,6 +315,7 @@ def admin_sync_status(
         "error_message": row["error_message"],
     }
 
+
 @app.get("/admin/export-grouped-csv")
 def export_grouped_csv(
     request: Request,
@@ -342,12 +346,14 @@ def export_grouped_csv(
 
     writer.writerow([
         "symbol-kolor",
+        "rozmiar",
         "Łączna liczba sprzedanych",
     ])
 
     for row in rows:
         writer.writerow([
             row["symbol_kolor"],
+            row["size_id"],
             row["laczna_liczba_sprzedanych"],
         ])
 
@@ -394,17 +400,20 @@ def export_grouped_xlsx(
     ws.append([])
     ws.append([
         "symbol-kolor",
+        "rozmiar",
         "Łączna liczba sprzedanych",
     ])
 
     for row in rows:
         ws.append([
             row["symbol_kolor"],
+            row["size_id"],
             row["laczna_liczba_sprzedanych"],
         ])
 
     ws.column_dimensions["A"].width = 30
-    ws.column_dimensions["B"].width = 26
+    ws.column_dimensions["B"].width = 16
+    ws.column_dimensions["C"].width = 26
 
     buffer = io.BytesIO()
     wb.save(buffer)
