@@ -347,6 +347,7 @@ def export_grouped_csv(
     writer.writerow([
         "symbol-kolor",
         "rozmiar",
+        "rezerwacje",
         "Łączna liczba sprzedanych",
     ])
 
@@ -354,6 +355,7 @@ def export_grouped_csv(
         writer.writerow([
             row["symbol_kolor"],
             row["size_id"],
+            row["rezerwacje"],
             row["laczna_liczba_sprzedanych"],
         ])
 
@@ -401,6 +403,7 @@ def export_grouped_xlsx(
     ws.append([
         "symbol-kolor",
         "rozmiar",
+        "rezerwacje",
         "Łączna liczba sprzedanych",
     ])
 
@@ -408,6 +411,7 @@ def export_grouped_xlsx(
         ws.append([
             row["symbol_kolor"],
             row["size_id"],
+            row["rezerwacje"],
             row["laczna_liczba_sprzedanych"],
         ])
 
