@@ -185,6 +185,7 @@ def count_aggregated_symbol_rows(db, q: str = "") -> int:
         SELECT
             symbol_kolor,
             size_id,
+            SUM(rezerwacje) AS rezerwacje,
             SUM(calkowita_liczba_sprzedanych) AS laczna_liczba_sprzedanych
         FROM aggregated
         GROUP BY symbol_kolor, size_id
@@ -228,6 +229,7 @@ def get_aggregated_symbol_rows(
         SELECT
             symbol_kolor,
             size_id,
+            SUM(rezerwacje) AS rezerwacje,
             SUM(calkowita_liczba_sprzedanych) AS laczna_liczba_sprzedanych
         FROM aggregated
         GROUP BY symbol_kolor, size_id
@@ -235,6 +237,7 @@ def get_aggregated_symbol_rows(
     SELECT
         symbol_kolor,
         size_id,
+        rezerwacje,
         laczna_liczba_sprzedanych
     FROM grouped_symbols
     WHERE 1=1
