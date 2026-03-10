@@ -322,7 +322,7 @@
             border-collapse: separate;
             border-spacing: 0;
             width: 100%;
-            min-width: 760px;
+            min-width: 900px;
         }
 
         th, td {
@@ -561,7 +561,7 @@
             <div class="section-header">
                 <div class="section-title-wrap">
                     <h2>Tabela produktów</h2>
-                    <p>Widok szczegółowy z identyfikatorami produktów, stanem dyspozycyjnym, rezerwacjami i liczbą sprzedanych.</p>
+                    <p>Widok szczegółowy z identyfikatorami produktów, rozmiarami, stanem dyspozycyjnym, rezerwacjami i liczbą sprzedanych.</p>
                 </div>
 
                 <a class="section-anchor-link" href="#grouped-table-section">Przejdź do tabeli zagregowanej ↓</a>
@@ -593,6 +593,7 @@
                                     symbol-kolor
                                 </a>
                             </th>
+                            <th>rozmiar</th>
                             <th>
                                 <a href="/admin?q={{ q or '' }}&sort={% if sort == 'm1_asc' %}m1_desc{% else %}m1_asc{% endif %}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={{ grouped_sort or 'symbol_asc' }}&grouped_page={{ grouped_page or 1 }}#products-table-section">
                                     stan dyspozycyjny (M1)
@@ -615,13 +616,14 @@
                         <tr>
                             <td>{{ row.id }}</td>
                             <td>{{ row.symbol_kolor }}</td>
+                            <td>{{ row.size_id }}</td>
                             <td>{{ row.m1_stan_dyspozycyjny }}</td>
                             <td>{{ row.rezerwacje }}</td>
                             <td>{{ row.calkowita_liczba_sprzedanych }}</td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5">Brak danych</td>
+                            <td colspan="6">Brak danych</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -653,7 +655,7 @@
             <div class="section-header">
                 <div class="section-title-wrap">
                     <h2>Zagregowane po symbol-kolor</h2>
-                    <p>Widok zbiorczy łączący pozycje o tym samym symbolu i kolorze w jeden model.</p>
+                    <p>Widok zbiorczy łączący pozycje o tym samym symbolu i kolorze oraz rozmiarze.</p>
                 </div>
 
                 <a class="section-anchor-link" href="#products-table-section">Wróć do tabeli produktów ↑</a>
@@ -685,6 +687,7 @@
                                     symbol-kolor
                                 </a>
                             </th>
+                            <th>rozmiar</th>
                             <th>
                                 <a href="/admin?q={{ q or '' }}&sort={{ sort or 'id_asc' }}&page={{ page or 1 }}&grouped_q={{ grouped_q or '' }}&grouped_sort={% if grouped_sort == 'sold_sum_asc' %}sold_sum_desc{% else %}sold_sum_asc{% endif %}&grouped_page={{ grouped_page or 1 }}#grouped-table-section">
                                     Łączna liczba sprzedanych
@@ -696,11 +699,12 @@
                         {% for row in grouped_rows %}
                         <tr>
                             <td>{{ row.symbol_kolor }}</td>
+                            <td>{{ row.size_id }}</td>
                             <td>{{ row.laczna_liczba_sprzedanych }}</td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="2">Brak danych</td>
+                            <td colspan="3">Brak danych</td>
                         </tr>
                         {% endfor %}
                     </tbody>
