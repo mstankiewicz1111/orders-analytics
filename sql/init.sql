@@ -47,3 +47,15 @@ CREATE TABLE IF NOT EXISTS sync_runs (
     rows_written_history INTEGER NOT NULL DEFAULT 0,
     error_message TEXT NULL
 );
+
+CREATE TABLE IF NOT EXISTS feed_sync_runs (
+    id BIGSERIAL PRIMARY KEY,
+    started_at TIMESTAMPTZ NOT NULL,
+    finished_at TIMESTAMPTZ NULL,
+    status TEXT NOT NULL,
+    products_found INTEGER NOT NULL DEFAULT 0,
+    error_message TEXT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_feed_sync_runs_started
+ON feed_sync_runs (started_at DESC);
