@@ -14,16 +14,28 @@ SORT_MAP = {
     "sold_desc": "calkowita_liczba_sprzedanych DESC",
 }
 
+SIZE_MAP = {
+    "E": "oversize",
+    "F": "XS/S",
+    "H": "M/L",
+}
 
 def _base_cte_sql() -> str:
     return """
     WITH aggregated AS (
         SELECT
-            p.product_id AS id,
-            (p.symbol || '-' || p.kolor) AS symbol_kolor,
-            s.size_id,
-            (s.quantity - s.reserved_orders) AS m1_stan_dyspozycyjny,
-            s.reserved_orders AS rezerwacje,
+    p.product_id AS id,
+    (p.symbol || '-' || p.kolor) AS symbol_kolor,
+
+        CASE
+            WHEN s.size_id = 'E' THEN 'oversize'
+            WHEN s.size_id = 'F' THEN 'XS/S'
+            WHEN s.size_id = 'H' THEN 'M/L'
+            ELSE s.size_id
+        END AS size_id,
+
+    (s.quantity - s.reserved_orders) AS m1_stan_dyspozycyjny,
+    s.reserved_orders AS rezerwacje,
 
             CASE
                 WHEN (s.quantity) > 2000
