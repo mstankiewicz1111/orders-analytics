@@ -218,6 +218,10 @@ def get_aggregated_symbol_rows(
     symbol_sort_map = {
         "symbol_asc": "symbol_kolor ASC",
         "symbol_desc": "symbol_kolor DESC",
+
+        "rez_asc": "rezerwacje ASC",
+        "rez_desc": "rezerwacje DESC",
+
         "sold_sum_asc": "laczna_liczba_sprzedanych ASC",
         "sold_sum_desc": "laczna_liczba_sprzedanych DESC",
     }
